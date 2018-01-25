@@ -1,13 +1,11 @@
-#include <iostream>
+#include <vector>
+#include <csignal>
 #include <sstream>
 #include <fstream>
-#include <vector>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include <iostream>
 #include <netdb.h>
 #include <zconf.h>
-#include <csignal>
+#include <arpa/inet.h>
 
 
 bool STOPED = false;
