@@ -74,7 +74,7 @@ public:
         char buffer[size];
         ssize_t recvCount = size;
         std::stringstream strBuilder;
-        while (buffer[size - 1] != '<') {
+        while (buffer[recvCount - 1] != '>') {
             recvCount = recv(sock, buffer, size, 0);
             if (recvCount < 0) {
                 const std::string errMsg("receive failed!");
@@ -163,7 +163,7 @@ int main() {
     // ctrl + c handler
     signal(SIGINT, stopLoop);
 
-    WifiSocket sock("localhost", 35000);
+    WifiSocket sock("192.168.0.10", 35000);
     sock.sendMessage(Commands::getEchoOffCode());
     sock.getAnswer();
     std::ofstream log("log.txt");
