@@ -110,8 +110,12 @@ public:
         return Commands::engineMoment;
     }
 
+    const static std::string &getEchoOffCode() {
+        return Commands::echoOff;
+    }
+
 protected:
-    static const std::string rpm, speed, engineMoment;
+    const static std::string rpm, speed, engineMoment, echoOff;
 
     Commands() {}
 
@@ -123,6 +127,8 @@ const std::string Commands::rpm = "010c\r";
 const std::string Commands::speed = "010d\r";
 
 const std::string Commands::engineMoment = "0162\r";
+
+const std::string Commands::echoOff= "ATE0\r";
 
 //class Commands {
 //    std::string command, description;
@@ -158,6 +164,8 @@ int main() {
     signal(SIGINT, stopLoop);
 
     WifiSocket sock("localhost", 35000);
+    sock.sendMessage(Commands::getEchoOffCode());
+    sock.getAnswer();
     std::ofstream log("log.txt");
     log << "{ [ ";
     while (!STOPED) {
