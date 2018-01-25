@@ -7,8 +7,19 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <zconf.h>
+#include <csignal>
+
+
+bool STOPED = false;
+
+void stopLoop(int s) {
+    STOPED = true;
+    std::cout << "The program is going to stop" << std::endl;
+    std::cout << "You are a monster!" << std::endl;
+}
 
 class WifiSocket {
+protected:
     int sock = -1;
     bool isOpened_;
     sockaddr_in server {};
@@ -17,7 +28,7 @@ public:
         if (sock == -1) {
             sock = socket(AF_INET, SOCK_STREAM, 0);
             if (sock == -1) {
-                const std::string errMsg("Could not create socket." );
+                const std::string errMsg("Could not create socket.");
                 std::cout << errMsg << std::endl;
                 throw std::runtime_error(errMsg);
             }
@@ -45,6 +56,7 @@ public:
         }
         isOpened_ = true;
     }
+
     ~WifiSocket() {
         this->closeConnection();
     }
@@ -84,60 +96,86 @@ public:
     }
 };
 
-class Command {
-    std::string command, description;
+class Commands {
 public:
-    Command(const std::string &command, const std::string &description) {
-        this->command = command;
-        this->description = description;
+    const static std::string &getRpmCode() {
+        return Commands::rpm;
     }
 
-    std::string &getCommand() { return this->command; }
-    std::string &getDescription() { return  this->description; }
+    const static std::string &getSpeedCode() {
+        return Commands::speed;
+    }
+
+    const static std::string &getEngineMomentCode() {
+        return Commands::engineMoment;
+    }
+
+protected:
+    static const std::string rpm, speed, engineMoment;
+
+    Commands() {}
+
+    ~Commands() = default;
 };
 
+const std::string Commands::rpm = "010c\r";
+
+const std::string Commands::speed = "010d\r";
+
+const std::string Commands::engineMoment = "0162\r";
+
+//class Commands {
+//    std::string command, description;
+//public:
+//    lol(const std::string &command, const std::string &description) {
+//        this->command = command;
+//        this->description = description;
+//    }
+//
+//    std::string &getCommand() { return this->command; }
+//
+//    std::string &getDescription() { return this->description; }
+//};
+
 int main() {
-    std::ifstream file("test.txt");
-    std::vector<Command> cmds;
-    do {
-        std::string line;
-        getline(file, line);
-        ulong fS = line.find(' ');
-        if (fS == std::string::npos) {
-            continue;
-        }
-        std::string ll = line.substr(0, fS);
-        Command cmd(ll, line.substr(fS + 1, line.size()));
-        cmds.push_back(cmd);
-    } while (!file.eof());
-    file.close();
+//    std::ifstream file("test.txt");
+//    std::vector<lol> cmds;
+//    while (!file.eof()) {
+//        std::string line;
+//        getline(file, line);
+//        ulong fS = line.find(' ');
+//        if (fS == std::string::npos) {
+//            continue;
+//        }
+//        std::string ll = line.substr(0, fS);
+//        lol cmd(ll, line.substr(fS + 1, line.size()));
+//        cmds.push_back(cmd);
+//    }
+//    file.close();
 
-    WifiSocket sock("127.0.0.1", 35000);
+
+    // ctrl + c handler
+    signal(SIGINT, stopLoop);
+
+    WifiSocket sock("localhost", 35000);
     std::ofstream log("log.txt");
-    while (true) {
-        int i = 0;
-        for (auto cmd : cmds) {
-            std::cout << '(' << i << ") " << cmd.getCommand() << ": " << cmd.getDescription() << std::endl;
-        }
+    log << "{ [ ";
+    while (!STOPED) {
+        log << "{ ";
+        sock.sendMessage(Commands::getRpmCode());
+        log << '"' << Commands::getRpmCode() << "\" : \"" << std::endl;
+        log << sock.getAnswer() << "\", ";
 
-        int var = -1;
-        std::cin >> var;
+        sock.sendMessage(Commands::getSpeedCode());
+        log << '"' << Commands::getSpeedCode() << "\" : \"" << std::endl;
+        log << sock.getAnswer() << "\", ";
 
-        if (!std::cin.good()) {
-            continue;
-        }
-
-        if (0 > var && var > cmds.size()) {
-            break;
-        }
-
-        sock.sendMessage(cmds[var - 1].getCommand() + "\r");
-        log << cmds[var - 1].getCommand() + "\n";
-        const std::string answer = sock.getAnswer();
-        log << answer;
-        std::cout << answer <<std::endl;
-
+        sock.sendMessage(Commands::getEngineMomentCode());
+        log << '"' << Commands::getEngineMomentCode() << "\" : \"" << std::endl;
+        log << sock.getAnswer() << "\" ";
+        log.flush();
     }
-
+    log << "] }" << std::endl;
+    log.close();
     return 0;
 }
